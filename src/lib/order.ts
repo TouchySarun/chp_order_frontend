@@ -7,8 +7,21 @@ export const getCreateData = async (barcode: string, branch: string) => {
     );
     console.log(res);
     if (res.status == 200) {
+      const order = {
+        ...res.data.order,
+        startDate: res.data.order.startDate
+          ? new Date(res.data.order.startDate)
+          : undefined,
+        endDate: res.data.order.endDate
+          ? new Date(res.data.order.endDate)
+          : undefined,
+        lstUpd: res.data.order.lstUpd
+          ? new Date(res.data.order.lstUpd)
+          : undefined,
+      };
       return {
         ...res.data,
+        order: order,
         lstSuccess: res.data.lstSuccess
           ? new Date(res.data.lstSuccess)
           : undefined,

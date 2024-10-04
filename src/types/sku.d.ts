@@ -1,13 +1,10 @@
 interface SKUType {
   id: string;
   name: string;
-  apCode: string; // ap_code
-  apName: string;
+  ap: string; // ap_code
   img?: string;
-  catCode: string;
-  catName: string;
-  brnCode: string;
-  brnName: string;
+  cat: string;
+  bnd: string;
   goods: GoodsType[];
   barcodes: string[];
 }

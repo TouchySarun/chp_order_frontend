@@ -67,21 +67,17 @@ function OrderPage() {
     if (!order) {
       // add new order
       const newOrder: OrderType = {
-        startDate: new Date(),
+        ap: sku.ap,
+        bnd: sku.bnd,
+        branch: branch,
+        cat: sku.cat,
+        code: selectBarcode,
+        creBy: username,
         name: sku.name,
+        qty: qtyNumber,
         utqName: selectGoods.utqName,
         utqQty: selectGoods.utqQty,
-        code: selectBarcode,
         sku: sku.id,
-        ap: sku.apCode,
-        creBy: username,
-        qty: qtyNumber,
-        leftQty: qtyNumber,
-        pending: true,
-        tag: tag,
-        branch: branch,
-        cat: sku.catCode,
-        brand: sku.brnCode,
       };
 
       const res = await createOrder(newOrder);
@@ -115,7 +111,7 @@ function OrderPage() {
       setOrder({
         ...newOrder,
         qty: qtyNumber + order.qty,
-        leftQty: qtyNumber + order.leftQty,
+        leftQty: qtyNumber + (order.leftQty || 0),
       });
     }
     setLoading(false);
@@ -155,6 +151,7 @@ function OrderPage() {
             className="inline-block flex-auto w-3/4 border rounded-l-lg p-2"
             placeholder="สแกนสินค้า"
             value={barcode}
+            autoCorrect="true"
             onChange={(e) => setBarcode(e.target.value)}
           />
           <button
@@ -177,19 +174,19 @@ function OrderPage() {
                   <p>
                     ประเภท:{" "}
                     <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.catName}
+                      {sku.cat}
                     </span>
                   </p>
                   <p>
                     เจ้าหนี้:{" "}
                     <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.apName}
+                      {sku.ap}
                     </span>
                   </p>
                   <p>
                     ยี่ห้อ:{" "}
                     <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.brnName}
+                      {sku.bnd}
                     </span>
                   </p>
                 </div>
