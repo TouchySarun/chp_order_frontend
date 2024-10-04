@@ -5,33 +5,39 @@ export const getCreateData = async (barcode: string, branch: string) => {
     const res = await axiosInstance.get(
       `/orders/create-data/${barcode}/${branch}`
     );
-    console.log(res);
-    if (res.status == 200) {
-      const order = {
-        ...res.data.order,
-        startDate: res.data.order.startDate
-          ? new Date(res.data.order.startDate)
-          : undefined,
-        endDate: res.data.order.endDate
-          ? new Date(res.data.order.endDate)
-          : undefined,
-        lstUpd: res.data.order.lstUpd
-          ? new Date(res.data.order.lstUpd)
-          : undefined,
-      };
-      return {
-        ...res.data,
-        order: order,
-        lstSuccess: res.data.lstSuccess
-          ? new Date(res.data.lstSuccess)
-          : undefined,
-      } as OrderCreateData;
-    } else {
-      return { error: "..." };
-    }
-  } catch (err) {
+    const sku = {
+      ...res.data.sku,
+      goods: res.data.sku.goods.sort((a: GoodsType, b: GoodsType) => {
+        if (a.utqQty !== b.utqQty) {
+          return a.utqQty - b.utqQty; // Sort by utqQty ascending
+        } else {
+          return b.code.localeCompare(a.code); // Sort by code descending
+        }
+      }),
+    };
+    return {
+      sku,
+      order: res.data.order
+        ? {
+            ...res.data.order,
+            startDate: res.data.order.startDate
+              ? new Date(res.data.order.startDate)
+              : undefined,
+            endDate: res.data.order.endDate
+              ? new Date(res.data.order.endDate)
+              : undefined,
+            lstUpd: res.data.order.lstUpd
+              ? new Date(res.data.order.lstUpd)
+              : undefined,
+          }
+        : undefined,
+      lstSuccess: res.data.lstSuccess
+        ? new Date(res.data.lstSuccess)
+        : undefined,
+    } as OrderCreateData;
+  } catch (err: any) {
     console.log("Error get order by sku. :", err);
-    return { error: "..." };
+    return { error: err.response.data.error };
   }
 };
 

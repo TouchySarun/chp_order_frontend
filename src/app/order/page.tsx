@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import EditOrder from "../components/EditOrder";
 import { getCreateData, createOrder, editOrder } from "@/lib/order";
 import SuccessOrder from "../components/order/SuccessOrder";
 import Loading from "../components/Loading";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCaretDown, faGear } from "@fortawesome/free-solid-svg-icons";
 
 function OrderPage() {
+  const barcodeRef = useRef<HTMLInputElement>(null);
+  const qtyRef = useRef<HTMLInputElement>(null);
+
   const [barcode, setBarcode] = useState("");
   const [selectBarcode, setSelectBarcode] = useState("");
   const [sku, setSKU] = useState<SKUType>();
@@ -18,11 +23,14 @@ function OrderPage() {
 
   const [showEdit, setShowEdit] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showSkuDetail, setShowSkuDetail] = useState(false);
+  const [showSetting, setShowSetting] = useState(false);
   const [lstSuccess, setLstSuccess] = useState<string>("");
 
   const [loading, setLoading] = useState(false);
 
-  const handleGetCreateData = async () => {
+  const handleGetCreateData = async (e: FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setSKU(undefined);
     setOrder(undefined);
@@ -37,8 +45,10 @@ function OrderPage() {
     const { sku, order, lstSuccess } = res1;
     setSKU(sku);
     setOrder(order);
+    setSelectBarcode(barcode);
     lstSuccess && setLstSuccess(lstSuccess.toLocaleDateString("en-GB"));
     setLoading(false);
+    qtyRef.current?.focus();
   };
 
   const resetData = () => {
@@ -46,9 +56,11 @@ function OrderPage() {
     setBarcode("");
     setSelectBarcode("");
     setQty("");
+    barcodeRef.current?.focus();
   };
 
-  const handleCreateOrder = async () => {
+  const handleCreateOrder = async (e: FormEvent) => {
+    e.preventDefault();
     if (!sku) {
       alert("SKU not found.");
       return;
@@ -120,10 +132,18 @@ function OrderPage() {
   };
 
   const handleEditOrder = async (newOrder: OrderType) => {
+    console.log("edit order");
+
     if (!order || !order.id) {
+      console.log("no order id");
+
       return;
     }
-    const res = await editOrder(newOrder);
+    const res = await editOrder({
+      ...newOrder,
+      qty: newOrder.qty - order.qty,
+      leftQty: newOrder.qty - (order.leftQty || 0),
+    });
     if ("error" in res) {
       alert("Error, update order");
       return;
@@ -132,6 +152,9 @@ function OrderPage() {
     setShowSuccess(true);
     resetData();
   };
+  useEffect(() => {
+    barcodeRef.current?.focus();
+  }, []);
 
   return (
     <>
@@ -144,9 +167,39 @@ function OrderPage() {
             setOrder={handleEditOrder}
           />
         )}
-        <h1 className="text-3xl text-orange-600 font-bold">สั่งสินค้า</h1>
-        <div className="flex my-3 shadow-md">
+        <div className="flex justify-between">
+          <h1 className="text-3xl text-orange-600 font-bold">สั่งสินค้า</h1>
+          <button
+            onClick={() => setShowSetting((e) => !e)}
+            className="p-2 rounded-t-lg bg-gray-200"
+          >
+            <FontAwesomeIcon
+              icon={faGear}
+              className={`ml-5 transition-all duration-500 ease-in-out overflow-hidden ${
+                showSetting ? "rotate-180" : "rotate-0"
+              }`}
+            />
+          </button>
+        </div>
+        <div
+          className={`bg-gray-200 grid grid-cols-2 gap-2 items-center text-xs transition-all duration-500 ease-in-out overflow-hidden ${
+            showSetting ? "max-h-80" : "max-h-0"
+          }`}
+        >
+          <p className="text-right">สาขา:</p>
           <input
+            ref={barcodeRef}
+            type="text"
+            className="m-2 inline-block border rounded p-2"
+            placeholder="สาขา"
+            value={branch}
+            autoCorrect="true"
+            onChange={(e) => setBranch(e.target.value)}
+          />
+        </div>
+        <form className="flex my-3 shadow-md" onSubmit={handleGetCreateData}>
+          <input
+            ref={barcodeRef}
             type="text"
             className="inline-block flex-auto w-3/4 border rounded-l-lg p-2"
             placeholder="สแกนสินค้า"
@@ -154,47 +207,53 @@ function OrderPage() {
             autoCorrect="true"
             onChange={(e) => setBarcode(e.target.value)}
           />
-          <button
-            onClick={handleGetCreateData}
-            className="inline-block flex-1 rounded-r-lg bg-green-500 text-white p-2"
-          >
+          <button className="inline-block flex-1 rounded-r-lg bg-green-500 text-white p-2">
             search
           </button>
-        </div>
+        </form>
         {showSuccess && order && <SuccessOrder order={order} />}
         {loading ? (
           <Loading />
         ) : (
           sku && (
             <div className="container flex flex-col gap-5 mx-auto my-3 p-2 rounded-lg shadow-lg border">
-              <div className="py-2 flex flex-col gap-2">
-                <h3 className="text-xl text-gray-400">ข้อมูลสินค้า</h3>
-                <p>ชื่อ: {sku.name}</p>
-                <div className="grid grid-cols-2 gap-5 text-xs">
-                  <p>
-                    ประเภท:{" "}
-                    <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.cat}
-                    </span>
-                  </p>
-                  <p>
-                    เจ้าหนี้:{" "}
-                    <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.ap}
-                    </span>
-                  </p>
-                  <p>
-                    ยี่ห้อ:{" "}
-                    <span className="bg-blue-100 rounded-full px-2 py-1">
-                      {sku.bnd}
-                    </span>
-                  </p>
+              <div className={`py-2 flex flex-col gap-2`}>
+                <button
+                  onClick={() => setShowSkuDetail((e) => !e)}
+                  className="text-xl text-left text-blue-400"
+                >
+                  {sku.name}
+                  <FontAwesomeIcon
+                    icon={faCaretDown}
+                    className={`ml-5 transition-all duration-500 ease-in-out overflow-hidden ${
+                      showSkuDetail ? "rotate-180" : "rotate-0"
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`grid grid-cols-4 gap-2 text-xs transition-all duration-500 ease-in-out overflow-hidden ${
+                    showSkuDetail ? "max-h-80" : "max-h-0"
+                  }`}
+                >
+                  <p>ประเภท: </p>
+                  <span className="bg-blue-50 rounded-md px-2 py-1 col-span-3">
+                    {sku.cat}
+                  </span>
+                  <p>ยี่ห้อ: </p>
+                  <span className="bg-blue-50 rounded-md px-2 py-1 col-span-3">
+                    {sku.bnd}
+                  </span>
+                  <p>เจ้าหนี้: </p>
+                  <span className="bg-blue-50 rounded-md px-2 py-1 col-span-3">
+                    {sku.ap}
+                  </span>
                 </div>
               </div>
               <div>
-                <div className="bg-orange-50 p-2 flex justify-between gap-2 items-center">
+                <div className="bg-orange-50 p-2">
                   {order ? (
-                    <>
+                    <div className=" flex justify-between gap-2 items-center">
                       <div>
                         <p>
                           คำสั่งคงค้าง{" "}
@@ -209,29 +268,29 @@ function OrderPage() {
                       </div>
                       <button
                         onClick={() => setShowEdit(true)}
-                        className="text-xs bg-orange-500 shadow-md px-3 py-1 rounded-lg text-white"
+                        className="bg-orange-500 shadow-md px-3 py-1 rounded-lg text-white"
                       >
                         แก้ไข
                       </button>
-                    </>
-                  ) : (
-                    <div className="bg-orange-50 p-2 text-gray-400">
-                      ไม่มีคำสั่งคงค้าง
                     </div>
+                  ) : (
+                    <p className="text-gray-400">ไม่มีคำสั่งคงค้าง</p>
                   )}
                 </div>
-                {lstSuccess ? (
-                  <p className="w-full p-2 bg-gray-200">
-                    จัดส่งล่าสุด{" "}
-                    <span className="bg-orange-200 rounded-full px-2 py-1">
-                      {lstSuccess}
+                <p className="w-full p-2 bg-gray-200">
+                  {lstSuccess ? (
+                    <>
+                      จัดส่งล่าสุด{" "}
+                      <span className="bg-orange-200 rounded-full px-2 py-1">
+                        {lstSuccess}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">
+                      สาขายังไม่เคยได้รับสินค้านี้จากคลัง
                     </span>
-                  </p>
-                ) : (
-                  <p className="w-full p-2 bg-gray-200 text-gray-400">
-                    สาขายังไม่เคยได้รับสินค้านี้จากคลัง
-                  </p>
-                )}
+                  )}
+                </p>
               </div>
               <div className="py-2">
                 <div className="flex items-end flex-wrap">
@@ -240,7 +299,7 @@ function OrderPage() {
                     *ถ้าในระบบมีคำสั่งอยู่แล้ว จะเป็นการสั่งเพิ่ม
                   </span>
                 </div>
-                <div className="flex flex-col gap-1 h-48 overflow-auto p-2 border rounded">
+                <div className="flex flex-col gap-1 p-2 border rounded">
                   {sku.goods.map((goods) => (
                     <label
                       key={goods.code}
@@ -265,6 +324,8 @@ function OrderPage() {
                     </label>
                   ))}
                 </div>
+              </div>
+              <form onSubmit={handleCreateOrder}>
                 <div className="flex my-3 shadow-md">
                   <label
                     htmlFor="qty"
@@ -273,6 +334,7 @@ function OrderPage() {
                     จำนวน
                   </label>
                   <input
+                    ref={qtyRef}
                     type="text"
                     name="qty"
                     id="qty"
@@ -285,19 +347,20 @@ function OrderPage() {
                 </div>
                 <div className="flex justify-between gap-2">
                   <button
+                    type="button"
                     onClick={resetData}
                     className="bg-red-500 shadow-md px-3 py-2 rounded-lg text-white"
                   >
                     ยกเลิก
                   </button>
                   <button
-                    onClick={handleCreateOrder}
+                    type="submit"
                     className="bg-green-500 shadow-md px-3 py-2 rounded-lg text-white flex-auto w-3/4"
                   >
                     ยืนยัน
                   </button>
                 </div>
-              </div>
+              </form>
             </div>
           )
         )}

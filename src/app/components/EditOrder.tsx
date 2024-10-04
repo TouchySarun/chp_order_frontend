@@ -41,8 +41,8 @@ function EditOrder({
       utqName: selectGoods.utqName,
       utqQty: selectGoods.utqQty,
       code: selectBarcode,
-      qty: qtyNumber - inputOrder.qty,
-      leftQty: qtyNumber - inputOrder.leftQty,
+      qty: qtyNumber,
+      leftQty: qtyNumber,
       tag: tag,
     };
     setOutput(newOrder);
