@@ -24,3 +24,19 @@ interface OrderCreateData {
   order: OrderType;
   lstSuccess: Date;
 }
+
+interface OrderFilter {
+  [key: string]: string | string[] | undefined | number;
+  ap?: string;
+  bnd?: string;
+  branch?: string[];
+  code?: string;
+  creBy?: string;
+  rack?: string;
+  search?: string;
+  status?: string[];
+  username?: string;
+  limit: number;
+  page: number;
+  orderBy?: string;
+}
